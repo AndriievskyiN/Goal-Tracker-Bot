@@ -1,6 +1,6 @@
 class Scraper:
     @staticmethod
-    def scrape_report(message: str):
+    def scrape_goals(message: str):
         for line in message.split("\n"):
             if line.lower().startswith("ім'я") or line.lower().startswith("имя"):
                 name = line.split("-")[1].strip()
@@ -14,9 +14,65 @@ class Scraper:
             elif line.lower().startswith("не виконані цілі"):
                 uncompleted_goals = int(line.split("-")[1].strip())
 
+            # elif line.split(".")[1].strip().lower().startswith("вага"):
+            #     weight = float(line.split("-")[1].strip())
+
         total_goals = completed_goals + uncompleted_goals
 
         return name, completed_goals, rewards, uncompleted_goals, total_goals
+
+    @staticmethod
+    def scrape_measurements(message: str):
+        for line in message.split("\n"):
+            if line.lower().startswith("ім'я") or line.lower().startswith("имя"):
+                name = line.split("-")[1].strip()
+
+            elif line.lower().startswith("вага"):
+                line = line.split("-")[1].strip()
+                index = line.find("(")
+                weight = float(line[:index])
+            
+            elif line.lower().startswith("плечі"):
+                line = line.split("-")[1].strip()
+                index = line.find("(")
+                shoulders = float(line[:index])
+
+            elif line.lower().startswith("груди"):
+                line = line.split("-")[1].strip()
+                index = line.find("(")
+                chest = float(line[:index])
+
+            elif line.split(".")[1].strip().lower().startswith("рука права"):
+                line = line.split("-")[1].strip()
+                index = line.find("(")
+                right_hand = float(line[:index])
+
+            elif line.split(".")[1].strip().lower().startswith("рука ліва"):
+                line = line.split("-")[1].strip()
+                index = line.find("(")
+                left_hand = float(line[:index])
+
+            elif line.split(".")[1].strip().lower().startswith("талія"):
+                line = line.split("-")[1].strip()
+                index = line.find("(")
+                waist = float(line[:index])
+
+            elif line.split(".")[1].strip().lower().startswith("стегна"):
+                line = line.split("-")[1].strip()
+                index = line.find("(")
+                hips = float(line[:index])  
+
+            elif line.split(".")[1].strip().lower().startswith("стегна праве"):
+                line = line.split("-")[1].strip()
+                index = line.find("(")
+                right_hip = float(line[:index])
+
+            elif line.split(".")[1].strip().lower().startswith("стегна ліве"):
+                line = line.split("-")[1].strip()
+                index = line.find("(")
+                left_hip = float(line[:index])
+
+        return name, weight, shoulders, chest, right_hand, left_hand, waist, hips, right_hip, left_hip
 
     # def get_data(self):
     #     return "---name---", self.__completed_goals, self.__rewards, self.__uncompleted_goals, self.__total_goals
