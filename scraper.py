@@ -36,12 +36,13 @@ class Scraper:
         data = {}
 
         for line in message.split("\n"):
+            line = re.sub("[–]", "-", line) # replace the weird-long dash symbol with a regular one 
             if line.lower().startswith("ім'я"):
                 name = line.split("-")[1].strip()
                 data["Ім'я"] = name
 
             elif re.match("^\d*[.]", line):
-                line = ".".join(re.sub("[–]", "-", line).split(".")[1:]).strip().lower() # replace the weird-long dash symbol with a regular one and apply some preprocessing
+                line = ".".join(line.split(".")[1:]).strip().lower() # apply some preprocessing
 
                 for i in keys:
                     if i == "стегна":
