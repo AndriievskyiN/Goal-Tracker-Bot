@@ -24,7 +24,7 @@ async def get_file(message: types.Message):
     doc = open("Report.xlsx", "rb")
     await bot.send_document(message.chat.id, document=doc)
 
-@dp.message_handler(commands=["getgoals"])
+@dp.message_handler(commands=["getmeasurements"])
 async def get_file(message: types.Message):
     doc = open("Measurements.xlsx", "rb")
     await bot.send_document(message.chat.id, document=doc)

@@ -1,3 +1,12 @@
+import re
+
+def get_value(line):
+    line = re.sub("[,]", ".", line.split("-")[1].strip())
+    index = line.find("(")
+    value = float(line[:index]) if index != -1 else float(line)
+    
+    return value
+
 class Scraper:
     @staticmethod
     def scrape_goals(message: str):
@@ -23,56 +32,28 @@ class Scraper:
 
     @staticmethod
     def scrape_measurements(message: str):
+        keys = ["вага", "плечі", "груди", "рука права", "рука ліва", "рука ліва", "талія", "стегна", "стегна праве", "стегна ліве"]
+        data = {}
+
         for line in message.split("\n"):
-            if line.lower().startswith("ім'я") or line.lower().startswith("имя"):
+            if line.lower().startswith("ім'я"):
                 name = line.split("-")[1].strip()
+                data["Ім'я"] = name
 
-            elif line.lower().startswith("вага"):
-                line = line.split("-")[1].strip()
-                index = line.find("(")
-                weight = float(line[:index])
-            
-            elif line.lower().startswith("плечі"):
-                line = line.split("-")[1].strip()
-                index = line.find("(")
-                shoulders = float(line[:index])
+            elif re.match("^\d*[.]", line):
+                line = ".".join(re.sub("[–]", "-", line).split(".")[1:]).strip().lower() # replace the weird-long dash symbol with a regular one and apply some preprocessing
 
-            elif line.lower().startswith("груди"):
-                line = line.split("-")[1].strip()
-                index = line.find("(")
-                chest = float(line[:index])
+                for i in keys:
+                    if i == "стегна":
+                        if line.startswith("стегна") and not (line.startswith("стегна праве") or line.startswith("стегна ліве")):
+                            data["Стегна"] = get_value(line)
+                    else:
+                        if line.startswith(i):
+                            data[i.capitalize()] = get_value(line)
 
-            elif line.split(".")[1].strip().lower().startswith("рука права"):
-                line = line.split("-")[1].strip()
-                index = line.find("(")
-                right_hand = float(line[:index])
+        return data
 
-            elif line.split(".")[1].strip().lower().startswith("рука ліва"):
-                line = line.split("-")[1].strip()
-                index = line.find("(")
-                left_hand = float(line[:index])
 
-            elif line.split(".")[1].strip().lower().startswith("талія"):
-                line = line.split("-")[1].strip()
-                index = line.find("(")
-                waist = float(line[:index])
-
-            elif line.split(".")[1].strip().lower().startswith("стегна"):
-                line = line.split("-")[1].strip()
-                index = line.find("(")
-                hips = float(line[:index])  
-
-            elif line.split(".")[1].strip().lower().startswith("стегна праве"):
-                line = line.split("-")[1].strip()
-                index = line.find("(")
-                right_hip = float(line[:index])
-
-            elif line.split(".")[1].strip().lower().startswith("стегна ліве"):
-                line = line.split("-")[1].strip()
-                index = line.find("(")
-                left_hip = float(line[:index])
-
-        return name, weight, shoulders, chest, right_hand, left_hand, waist, hips, right_hip, left_hip
 
     # def get_data(self):
     #     return "---name---", self.__completed_goals, self.__rewards, self.__uncompleted_goals, self.__total_goals
@@ -85,9 +66,10 @@ class Scraper:
     #     print(f"Rewards: {self.__rewards}")
     #     print(f"Uncompleted goals: {self.__uncompleted_goals}")
 
-# with open("test_message.txt", "r") as f:
+# with open("test_message3.txt", "r") as f:
 #     lines = f.read()
 
 # scraper = Scraper()
-# data = scraper.scrape_report(lines)
+# data = scraper.scrape_measurements(lines)
+# print(data)
 # # scraper.print_info()
