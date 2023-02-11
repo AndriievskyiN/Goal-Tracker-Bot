@@ -23,9 +23,6 @@ class Scraper:
             elif line.lower().startswith("не виконані цілі"):
                 uncompleted_goals = int(line.split("-")[1].strip())
 
-            # elif line.split(".")[1].strip().lower().startswith("вага"):
-            #     weight = float(line.split("-")[1].strip())
-
         total_goals = completed_goals + uncompleted_goals
 
         return name, completed_goals, rewards, uncompleted_goals, total_goals

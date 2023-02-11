@@ -1,6 +1,3 @@
-import re
+a = [(0, 1, 2, 5), (2, 5, 1, 5)]
 
-a = "115,5"
-float(a)
-
-print(a.startswith("стегна праве"))
+print(sorted(a, key=lambda x: -x[0]))
