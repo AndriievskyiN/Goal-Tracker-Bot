@@ -64,7 +64,8 @@ class DataWriter:
                 completed_goals SMALLINT,
                 rewards SMALLINT, 
                 uncompleted_goals SMALLINT,
-                total_goals SMALLINT
+                total_goals SMALLINT,
+                UNIQUE (year, month, week_num, name)
             )    
         """
 
@@ -123,28 +124,23 @@ class DataWriter:
         week_num = int(week_number_of_month(today))
 
         self.__cur.execute(
-            """
-            INSERT INTO goals (year, month, week_num, name, completed_goals, rewards, uncompleted_goals, total_goals)
-            
-            SELECT  
-                %s, %s, %s, %s, %s, %s, %s, %s
-            
-            WHERE NOT EXISTS (
-                SELECT 1
-                    FROM goals WHERE name = %s
-            )
-
-            RETURNING 1
-            """, 
-            ((year, month, week_num) + tuple(data) + (data[0], )))
-
+        """
+        INSERT INTO goals (year, month, week_num, name, completed_goals, rewards, uncompleted_goals, total_goals)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         
-        self.__conn.commit()
+        ON CONFLICT (year, month, week_num, name)
+            DO UPDATE
+                SET 
+                    completed_goals = excluded.completed_goals, 
+                    rewards = excluded.rewards,
+                    uncompleted_goals = excluded.uncompleted_goals,
+                    total_goals = excluded.total_goals
 
-        if self.__cur.fetchall(): 
-            return "✅"
-        else:
-            return "Data for the person already exists, not inserting"
+        RETURNING 1
+        """, 
+        ((year, month, week_num) + tuple(data)))
+
+        self.__conn.commit()
         
     
     # def TEST_write_measurement_data(self, data):
