@@ -138,12 +138,13 @@ class DataWriter:
             """, 
             ((year, month, week_num) + tuple(data) + (data[0], )))
 
-        if not self.__cur.fetchall():
+        
+        self.__conn.commit()
+
+        if self.__cur.fetchall(): 
             return "✅"
         else:
-            "Data for the person already exists, not inserting"
-
-        self.__conn.commit()
+            return "Data for the person already exists, not inserting"
         
     
     # def TEST_write_measurement_data(self, data):
