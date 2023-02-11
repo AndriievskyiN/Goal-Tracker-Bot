@@ -125,13 +125,19 @@ class DataWriter:
         self.__cur.execute(
             """
             INSERT INTO goals (year, month, week_num, name, completed_goals, rewards, uncompleted_goals, total_goals)
-                VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s
-                )
+            
+            SELECT  
+                %s, %s, %s, %s, %s, %s, %s, %s
+            
+            WHERE NOT EXISTS (
+                SELECT 1
+                    FROM goals WHERE name = %s
+            )
             """, 
-            ((year, month, week_num) + tuple(data)))
+            ((year, month, week_num) + tuple(data) + (data[0], )))
 
         self.__conn.commit()
+        
     
     # def TEST_write_measurement_data(self, data):
     #     # WILL NOT WORK (DATA IS SUPPOSED TO BE A DICTIONARY, BUT IN THIS FUNCTION IT IS TREATED AS A LIST)
@@ -148,7 +154,7 @@ class DataWriter:
     #     self.__conn.commit()
 
 
-    def TEST_get_goals_xl(self, mode: str, sort_by: str):
+    def get_goals_xl(self, mode: str, sort_by: str):
         sort_by_options = ["completed", "rewards", "uncompleted", "total"]
 
         if mode == "week":
@@ -168,10 +174,10 @@ class DataWriter:
 
             self.__cur.execute(query, insert_values)
             data = self.__cur.fetchall()
-            
+
             # Get index to sort by
-            sort_by_index = sort_by_options.index(sort_by)
-            data = sorted(data, key=lambda x: x[sort_by_index])
+            sort_by_index = sort_by_options.index(sort_by) + 1 # because we exclude name 
+            data = sorted(data, key=lambda x: -x[sort_by_index])
 
             # Create an excel sheet
             today = datetime.today().date()

@@ -33,7 +33,7 @@ async def handle_goals_mode(call: types.CallbackQuery):
     await call.message.delete()
 
     mode = call.data
-    data_writer.TEST_get_goals_xl(mode, "total")
+    data_writer.get_goals_xl(mode, "total")
     doc = open("Report.xlsx", "rb")
     await bot.send_document(call.message.chat.id, document=doc)
 
