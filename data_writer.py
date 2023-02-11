@@ -116,7 +116,7 @@ class DataWriter:
 
 
     
-    def write_goal_data_db(self, data: List[Union[str, int]]):
+    def write_goal_data_db(self, data: List[Union[str, int]]) -> str:
         today = datetime.today().date()
         year = int(today.strftime("%Y"))
         month = int(today.strftime("%m"))
@@ -133,8 +133,15 @@ class DataWriter:
                 SELECT 1
                     FROM goals WHERE name = %s
             )
+
+            RETURNING 1
             """, 
             ((year, month, week_num) + tuple(data) + (data[0], )))
+
+        if not self.__cur.fetchall():
+            return "✅"
+        else:
+            "Data for the person already exists, not inserting"
 
         self.__conn.commit()
         

@@ -69,10 +69,10 @@ async def handle_goals_sort_by(call: types.CallbackQuery, state: FSMContext):
 async def scrape(message: types.Message):
     goals = Scraper.scrape_goals(message.text)
     # measurements = Scraper.scrape_measurements(message.text)
-    data_writer.write_goal_data_db(goals)
+    output_message = data_writer.write_goal_data_db(goals)
     # data_writer.write_measurement_data(measurements)
 
-    await message.answer("✅")
+    await message.answer(output_message)
 
 
 if __name__ == "__main__":
