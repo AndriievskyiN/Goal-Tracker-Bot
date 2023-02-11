@@ -177,7 +177,12 @@ class DataWriter:
 
             # Get index to sort by
             sort_by_index = sort_by_options.index(sort_by) + 1 # because we exclude name 
-            data = sorted(data, key=lambda x: -x[sort_by_index])
+
+            if sort_by == "uncompleted":
+                data = sorted(data, key=lambda x: x[sort_by_index]) # sort in ascending order
+            
+            else:
+                data = sorted(data, key=lambda x: -x[sort_by_index]) # sort in descending order
 
             # Create an excel sheet
             today = datetime.today().date()
