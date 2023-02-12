@@ -24,7 +24,7 @@ goal_sort_by_keyboard = Keyboard.get_keyboard("goal_sort_by_keyboard")
 # START COMMAND
 @dp.message_handler(commands=["start"])
 async def welcome(message: types.Message):
-    await message.answer("Hello World!")
+    await message.answer("Вітаю! Для початку подивіться це відео про команди цього бота: \nADD LINK")
 
 @dp.message_handler(commands=["getgoals"])
 async def get_goals_mode(message: types.Message):
@@ -55,12 +55,13 @@ async def handle_goals_sort_by(call: types.CallbackQuery, state: FSMContext):
     mode = data["mode"]
     sort_by = call.data
 
-    data_writer.get_goals_xl(mode, sort_by)
-    doc = open("Report.xlsx", "rb")
+    filename = data_writer.get_goals_xl(mode, sort_by)
+    doc = open(filename, "rb")
     await bot.send_document(call.message.chat.id, document=doc)
 
     # Delete the document
-    os.system("rm Report.xlsx")
+    filename = filename.replace(" ", "\ ")
+    os.system(f"rm {filename}")
 
     await state.finish()
 

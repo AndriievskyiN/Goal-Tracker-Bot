@@ -85,15 +85,14 @@ class DataWriter:
         # self.__cur.execute(create_measurements_table)
         self.__conn.commit()
 
-        self.__current_year = datetime.now().year
-        self.__current_month = self.__index_to_month[datetime.now().month]
+        # self.__current_year = datetime.now().year
+        # self.__current_month = self.__index_to_month[datetime.now().month]
 
-        self.__meas_workbook = xl.Workbook()
-        self.__meas_worksheet = self.__meas_workbook.active
-        self.__meas_worksheet.title = f"{self.__current_month} {self.__current_year}"
-        self.__meas_worksheet.append(["Ім'я", "Вага", "Плечі",  "Груди", "Рука права", "Рука ліва", "Талія", "Стегна", "Стегна праве", "Стегна ліве"])
+        # self.__meas_workbook = xl.Workbook()
+        # self.__meas_worksheet = self.__meas_workbook.active
+        # self.__meas_worksheet.title = f"{self.__current_month} {self.__current_year}"
+        # self.__meas_worksheet.append(["Ім'я", "Вага", "Плечі",  "Груди", "Рука права", "Рука ліва", "Талія", "Стегна", "Стегна праве", "Стегна ліве"])
         
-
     def write_goals_xl(self, data):
         self.__goal_worksheet.append(data)
         self.__goal_workbook.save("Report.xlsx")
@@ -149,9 +148,12 @@ class DataWriter:
         today = datetime.today().date()
         year = int(datetime.now().strftime("%Y"))
         month = int(datetime.now().strftime("%m"))
+        month_str = self.__index_to_month[month]
         week_num = week_number_of_month(today)
 
         if mode == "week":
+            filename = f"{year} {month_str} {week_num}.xlsx"
+
             query = """
                 SELECT 
                     name, completed_goals, rewards, uncompleted_goals, total_goals
@@ -176,28 +178,29 @@ class DataWriter:
                     data = sorted(data, key=lambda x: -x[sort_by_index]) # sort in descending order
 
                 # Create an excel sheet
-                goal_workbook = xl.Workbook()
-                goal_worksheet = goal_workbook.active
-                goal_worksheet.title = str(today)
-                goal_worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
+                workbook = xl.Workbook()
+                worksheet = workbook.active
+                worksheet.title = str(today)
+                worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
                 # Make the headers bold
-                for cell in goal_worksheet[1]:
+                for cell in worksheet[1]:
                     cell.font = Font(bold=True)
 
                 # Add data to the excel sheet
                 for i in data:
-                    goal_worksheet.append(list(i))
-                    goal_workbook.save("Report.xlsx")
+                    worksheet.append(list(i))
+
+                workbook.save(filename)
 
             else: 
-                goal_workbook = xl.Workbook()
-                goal_worksheet = goal_workbook.active
-                goal_worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
+                workbook = xl.Workbook()
+                worksheet = workbook.active
+                worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
                 # Make the headers bold
-                for cell in goal_worksheet[1]:
+                for cell in worksheet[1]:
                     cell.font = Font(bold=True)
 
-                goal_workbook.save("Report.xlsx")
+                workbook.save(filename)
     
         elif mode == "month":
             sort_by_direction = "ASC" if sort_by == "uncompleted_goals" else "DESC"
@@ -306,7 +309,8 @@ class DataWriter:
                 for cell in worksheet[last_row]:
                     cell.font = Font(bold=True)
 
-                workbook.save("Report.xlsx")
+                filename = f"{month} {year}.xlsx"
+                workbook.save(filename)
 
             else: 
                 worksheet = workbook.active
@@ -314,10 +318,15 @@ class DataWriter:
                 # Make the headers bold
                 for cell in worksheet[1]:
                     cell.font = Font(bold=True)
-                workbook.save("Report.xlsx")
+
+                filename = f"{month} {year}.xlsx"
+                workbook.save(filename)
 
         elif mode == "year":
             pass
+
+        workbook.save(filename)
+        return filename
 
 
 def week_number_of_month(date_value):
