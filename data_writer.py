@@ -1,7 +1,7 @@
 import openpyxl as xl
 import psycopg2
 
-from typing import Dict, Union, List
+from typing import Dict, Union, Tuple
 from datetime import datetime
 
 from hidden import hostname, database, username, pwd, port_id
@@ -38,13 +38,13 @@ class DataWriter:
             """
         )
 
-        self.__cur.execute(
-            """
-            DROP TABLE measurements
-            """
-        )
+        # self.__cur.execute(
+        #     """
+        #     DROP TABLE measurements
+        #     """
+        # )
 
-        self.__conn.commit()
+        # self.__conn.commit()
 
         create_goals_table = """
             CREATE TABLE IF NOT EXISTS goals (
@@ -61,27 +61,27 @@ class DataWriter:
             )    
         """
 
-        create_measurements_table = """
-            CREATE TABLE IF NOT EXISTS measurements (
-                id SERIAL PRIMARY KEY,
-                year SMALLINT,
-                month SMALLINT,
-                week_num SMALLINT,
-                name VARCHAR(100) NOT NULL,
-                weight REAL,
-                shoulders REAL,
-                chest REAL,
-                right_arm REAL, 
-                left_arm REAL,
-                waist REAL,
-                hips REAL, 
-                right_hip REAL,
-                left_hip REAL
-            )
-        """
+        # create_measurements_table = """
+        #     CREATE TABLE IF NOT EXISTS measurements (
+        #         id SERIAL PRIMARY KEY,
+        #         year SMALLINT,
+        #         month SMALLINT,
+        #         week_num SMALLINT,
+        #         name VARCHAR(100) NOT NULL,
+        #         weight REAL,
+        #         shoulders REAL,
+        #         chest REAL,
+        #         right_arm REAL, 
+        #         left_arm REAL,
+        #         waist REAL,
+        #         hips REAL, 
+        #         right_hip REAL,
+        #         left_hip REAL
+        #     )
+        # """
 
         self.__cur.execute(create_goals_table)
-        self.__cur.execute(create_measurements_table)
+        # self.__cur.execute(create_measurements_table)
         self.__conn.commit()
 
         self.__current_year = datetime.now().year
@@ -109,12 +109,7 @@ class DataWriter:
 
 
     
-    def write_goal_data_db(self, data: List[Union[str, int]]) -> str:
-        today = datetime.today().date()
-        year = int(today.strftime("%Y"))
-        month = int(today.strftime("%m"))
-        week_num = int(week_number_of_month(today))
-
+    def write_goal_data_db(self, data: Tuple[Union[str, int]]) -> str:
         self.__cur.execute(
         """
         INSERT INTO goals (year, month, week_num, name, completed_goals, rewards, uncompleted_goals, total_goals)
@@ -130,10 +125,8 @@ class DataWriter:
 
         RETURNING 1
         """, 
-        ((year, month, week_num) + tuple(data)))
-
+        data)
         self.__conn.commit()
-        
     
     # def TEST_write_measurement_data(self, data):
     #     # WILL NOT WORK (DATA IS SUPPOSED TO BE A DICTIONARY, BUT IN THIS FUNCTION IT IS TREATED AS A LIST)
@@ -171,26 +164,34 @@ class DataWriter:
             self.__cur.execute(query, insert_values)
             data = self.__cur.fetchall()
 
-            # Get index to sort by
-            sort_by_index = sort_by_options.index(sort_by) + 1 # because we exclude name 
+            if data:
+                # Get index to sort by
+                sort_by_index = sort_by_options.index(sort_by) + 1 # because we exclude name 
 
-            if sort_by == "uncompleted":
-                data = sorted(data, key=lambda x: x[sort_by_index]) # sort in ascending order
+                if sort_by == "uncompleted":
+                    data = sorted(data, key=lambda x: x[sort_by_index]) # sort in ascending order
+                
+                else:
+                    data = sorted(data, key=lambda x: -x[sort_by_index]) # sort in descending order
+
+                # Create an excel sheet
+                today = datetime.today().date()
+
+                goal_workbook = xl.Workbook()
+                goal_worksheet = goal_workbook.active
+                goal_worksheet.title = str(today)
+                goal_worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
+
+                # Add data to the excel sheet
+                for i in data:
+                    goal_worksheet.append(list(i))
+                    goal_workbook.save("Report.xlsx")
+
             
-            else:
-                data = sorted(data, key=lambda x: -x[sort_by_index]) # sort in descending order
-
-            # Create an excel sheet
-            today = datetime.today().date()
-
-            goal_workbook = xl.Workbook()
-            goal_worksheet = goal_workbook.active
-            goal_worksheet.title = str(today)
-            goal_worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
-
-            # Add data to the excel sheet
-            for i in data:
-                goal_worksheet.append(list(i))
+            else: 
+                goal_workbook = xl.Workbook()
+                goal_worksheet = goal_workbook.active
+                goal_worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
                 goal_workbook.save("Report.xlsx")
     
         elif mode == "month":
@@ -209,4 +210,4 @@ class DataWriter:
 
 
 def week_number_of_month(date_value):
-     return (date_value.isocalendar()[1] - date_value.replace(day=1).isocalendar()[1] + 1)
+     return (date_value.isocalendar()[1] - date_value.replace(day=2).isocalendar()[1] + 1)
