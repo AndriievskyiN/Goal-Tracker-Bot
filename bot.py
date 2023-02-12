@@ -35,12 +35,16 @@ async def handle_goals_mode(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
 
     mode = call.data
-    await state.update_data(
-        {"mode": mode}
-    )
+    if mode == "year":
+        await call.message.answer("На даний момент ця функція не працює, виберіть інший період", reply_markup=goal_mode_keyboard)
 
-    await GoalPreferenceParser.mode.set()
-    await call.message.answer("Сортувати за", reply_markup=goal_sort_by_keyboard)
+    else:
+        await state.update_data(
+            {"mode": mode}
+        )
+
+        await GoalPreferenceParser.mode.set()
+        await call.message.answer("Сортувати за", reply_markup=goal_sort_by_keyboard)
 
 
 @dp.callback_query_handler(state=GoalPreferenceParser.mode)

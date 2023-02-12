@@ -1,10 +1,9 @@
 import openpyxl as xl
 import psycopg2
 
-from typing import Dict, Union, List, Any
+from typing import Dict, Union, List
 from datetime import datetime
 
-from scraper import Scraper
 from hidden import hostname, database, username, pwd, port_id
 
 class DataWriter:
@@ -31,7 +30,6 @@ class DataWriter:
             password=pwd,
             port=port_id
         )
-
         self.__cur = self.__conn.cursor()
 
         self.__cur.execute(
@@ -47,8 +45,6 @@ class DataWriter:
         )
 
         self.__conn.commit()
-
-
 
         create_goals_table = """
             CREATE TABLE IF NOT EXISTS goals (
@@ -207,11 +203,9 @@ class DataWriter:
                     month = %s
             """
 
-            print("month")
-
 
         elif mode == "year":
-            print("year")
+            pass
 
 
 def week_number_of_month(date_value):

@@ -1,7 +1,6 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 class Keyboard:
-
     @staticmethod
     def get_keyboard(type: str) -> InlineKeyboardMarkup:
         if type == "goal_mode_keyboard":
