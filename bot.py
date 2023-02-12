@@ -116,12 +116,16 @@ async def concatsecond(message: types.Message, state: FSMContext):
 
 @dp.message_handler(lambda message: not message.text.startswith("/get"))
 async def scrape(message: types.Message):
-    goals = Scraper.scrape_goals(message.text)
-    # measurements = Scraper.scrape_measurements(message.text)
-    data_writer.write_goal_data_db(goals)
-    # data_writer.write_measurement_data(measurements)
 
-    await message.answer("✅")
+    try:
+        goals = Scraper.scrape_goals(message.text)
+        # measurements = Scraper.scrape_measurements(message.text)
+    except:
+        await message.answer("Не знайшов всю потрібну інформацію... Якщо це тільки одна частина звіту, спробуйте команду /addbyparts або відправте повне повідомлення")
+    else:
+        data_writer.write_goal_data_db(goals)
+        await message.answer("✅")
+        # data_writer.write_measurement_data(measurements)
 
 
 if __name__ == "__main__":
