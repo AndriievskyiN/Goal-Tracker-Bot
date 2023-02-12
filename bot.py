@@ -9,7 +9,7 @@ from hidden import TOKEN
 from scraper import Scraper
 from data_writer import DataWriter
 from keyboards import Keyboard
-from dialogs import GoalPreferenceParser
+from dialogs import GoalPreferenceParser, ReportCombiner
 
 # Setting up the bot
 bot = Bot(token=TOKEN)
@@ -58,6 +58,50 @@ async def handle_goals_sort_by(call: types.CallbackQuery, state: FSMContext):
     # Delete the document
     os.system("rm Report.xlsx")
 
+    await state.finish()
+
+
+@dp.message_handler(commands=["addbyparts"])
+async def addreport(message: types.Message):
+    await message.answer("Відправте першу частину повідомлення")
+
+@dp.message_handler()
+async def concatfirst(message: types.Message, state: FSMContext):
+    if message.text.lower().strip() == "стоп":
+        state.finish()
+        await message.answer("👌")
+
+    else:
+        first_part = message.text
+        await state.update_data(
+            {"message1": first_part}
+        )
+
+        await message.answer("Відправте другу частину повідомлення")
+        await ReportCombiner.message1.set()
+
+@dp.message_handler(state=ReportCombiner.message1)
+async def concatsecond(message: types.Message, state: FSMContext):
+    if message.text.lower().strip() == "стоп":
+        data = await state.get_data()
+        txt_report = data["message1"]
+
+    else:
+        second_part = message.text
+        await state.update_data(
+            {"message2": second_part}
+        )
+
+        data = await state.get_data()
+
+        # Concatenate the messsages
+        txt_report = data["message1"] + data["message2"]
+
+        # Scrape and write data
+        goals = Scraper.scrape_goals(txt_report)
+        data_writer.write_goal_data_db(goals) 
+
+    await message.answer("✅")
     await state.finish()
 
 # @dp.message_handler(commands=["getmeasurements"])
