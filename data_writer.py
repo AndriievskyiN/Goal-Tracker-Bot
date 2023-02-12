@@ -1,8 +1,11 @@
 import openpyxl as xl
 import psycopg2
-from datetime import datetime
-from scraper import Scraper
+
 from typing import Dict, Union, List, Any
+from datetime import datetime
+
+from scraper import Scraper
+from hidden import hostname, database, username, pwd, port_id
 
 class DataWriter:
     def __init__(self):
@@ -20,13 +23,6 @@ class DataWriter:
             11: "Листопад",
             12: "Грудень"
         }
-
-
-        hostname = "localhost"
-        database = "coach-bot"
-        username = "andriievskyi"
-        pwd = "Kakady33dyno"
-        port_id = 5432
 
         self.__conn = psycopg2.connect(
             host=hostname,
