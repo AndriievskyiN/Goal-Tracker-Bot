@@ -18,8 +18,8 @@ dp = Dispatcher(bot, storage=storage)
 
 # Initialize objects
 data_writer = DataWriter()
-goal_mode_keyboard = Keyboard.goal_mode_keyboard()
-goal_sort_by_keyboard = Keyboard.goal_sort_by_keyboard()
+goal_mode_keyboard = Keyboard.get_keyboard("goal_mode_keyboard")
+goal_sort_by_keyboard = Keyboard.get_keyboard("goal_sort_by_keyboard")
 
 # START COMMAND
 @dp.message_handler(commands=["start"])
@@ -62,10 +62,11 @@ async def handle_goals_sort_by(call: types.CallbackQuery, state: FSMContext):
 
 
 @dp.message_handler(commands=["addbyparts"])
-async def addreport(message: types.Message):
+async def addreport(message: types.Message, state: FSMContext):
     await message.answer("Відправте першу частину повідомлення")
+    await ReportCombiner.message1.set()
 
-@dp.message_handler()
+@dp.message_handler(state=ReportCombiner.message1)
 async def concatfirst(message: types.Message, state: FSMContext):
     if message.text.lower().strip() == "стоп":
         state.finish()
@@ -78,9 +79,9 @@ async def concatfirst(message: types.Message, state: FSMContext):
         )
 
         await message.answer("Відправте другу частину повідомлення")
-        await ReportCombiner.message1.set()
+        await ReportCombiner.next()
 
-@dp.message_handler(state=ReportCombiner.message1)
+@dp.message_handler(state=ReportCombiner.message2)
 async def concatsecond(message: types.Message, state: FSMContext):
     if message.text.lower().strip() == "стоп":
         data = await state.get_data()
@@ -97,12 +98,16 @@ async def concatsecond(message: types.Message, state: FSMContext):
         # Concatenate the messsages
         txt_report = data["message1"] + data["message2"]
 
-        # Scrape and write data
+    # Scrape and write data
+    try:
         goals = Scraper.scrape_goals(txt_report)
-        data_writer.write_goal_data_db(goals) 
+    except:
+        await message.answer("Не знайшов всю потрібну інформацію... Відправте початок чи кінець повідомлення")
 
-    await message.answer("✅")
-    await state.finish()
+    else:
+        data_writer.write_goal_data_db(goals) 
+        await message.answer("✅")
+        await state.finish()
 
 # @dp.message_handler(commands=["getmeasurements"])
 # async def get_measurements(message: types.Message):
