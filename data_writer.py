@@ -1,5 +1,6 @@
-import openpyxl as xl
 import psycopg2
+import openpyxl as xl
+from openpyxl.styles import Font
 
 from typing import Dict, Union, Tuple
 from datetime import datetime
@@ -146,6 +147,7 @@ class DataWriter:
     def get_goals_xl(self, mode: str, sort_by: str):
         sort_by_options = ["completed", "rewards", "uncompleted", "total"]
         today = datetime.today().date()
+        year = int(datetime.now().strftime("%Y"))
         month = int(datetime.now().strftime("%m"))
         week_num = week_number_of_month(today)
 
@@ -155,17 +157,17 @@ class DataWriter:
                     name, completed_goals, rewards, uncompleted_goals, total_goals
                 FROM
                     goals
-                WHERE month = %s and week_num = %s
+                WHERE year = %s and month = %s and week_num = %s
             """
 
-            insert_values = (month, week_num)
+            insert_values = (year, month, week_num)
 
             self.__cur.execute(query, insert_values)
             data = self.__cur.fetchall()
 
             if data:
                 # Get index to sort by
-                sort_by_index = sort_by_options.index(sort_by) + 1 # because we exclude name 
+                sort_by_index = sort_by_options.index(sort_by) + 1 # + 1 because we exclude name 
 
                 if sort_by == "uncompleted":
                     data = sorted(data, key=lambda x: x[sort_by_index]) # sort in ascending order
@@ -178,6 +180,9 @@ class DataWriter:
                 goal_worksheet = goal_workbook.active
                 goal_worksheet.title = str(today)
                 goal_worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
+                # Make the headers bold
+                for cell in goal_worksheet[1]:
+                    cell.font = Font(bold=True)
 
                 # Add data to the excel sheet
                 for i in data:
@@ -189,70 +194,123 @@ class DataWriter:
                 goal_workbook = xl.Workbook()
                 goal_worksheet = goal_workbook.active
                 goal_worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
+                # Make the headers bold
+                for cell in goal_worksheet[1]:
+                    cell.font = Font(bold=True)
+                    
                 goal_workbook.save("Report.xlsx")
     
         elif mode == "month":
-            insert_value = (month, )
-            totals_query = """
-                SELECT 
-                    year, month, name, sum(completed_goals), sum(rewards), sum(uncompleted_goals), sum(total_goals)
-                FROM 
-                    goals
-                WHERE 
-                    month = %s
-                GROUP BY
-                    name, month, year
-            """
-
+            insert_values = (year, month)
             monthly_data_query = """
                 SELECT 
                     year, month, week_num, name, completed_goals, rewards, uncompleted_goals, total_goals
                 FROM 
                     goals
                 WHERE 
-                    month = %s
+                    year = %s and month = %s
             """
 
-            self.__cur.execute(monthly_data_query, insert_value)    
+            totals_query = """
+                SELECT 
+                    year, month, name, sum(completed_goals), sum(rewards), sum(uncompleted_goals), sum(total_goals)
+                FROM 
+                    goals
+                WHERE 
+                    year = %s and month = %s
+                GROUP BY
+                    name, month, year
+            """
+
+            final_summary_query = """
+                SELECT 
+                    sum(completed_goals), sum(rewards), sum(uncompleted_goals), sum(total_goals)
+                FROM       
+                    goals
+                WHERE 
+                    year = %s and month = %s
+                GROUP BY
+                    year, month
+            """
+
+            self.__cur.execute(monthly_data_query, insert_values)    
             monthly_data = self.__cur.fetchall()
 
-            self.__cur.execute(totals_query, insert_value)    
+            self.__cur.execute(totals_query, insert_values)    
             total_data = self.__cur.fetchall()
+
+            self.__cur.execute(final_summary_query, insert_values)
+            final_summary_data = self.__cur.fetchall()
 
             # Create an excel sheet
             workbook = xl.Workbook()
 
-            worksheet = workbook.active
-            year = monthly_data[0][0]
-            month = self.__index_to_month[monthly_data[0][1]]
-            week_num = monthly_data[0][2]
-            sheet_name = f"{year} {month} {week_num}"
-            worksheet.title = sheet_name # e.g. 2023 February 3
-            worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
-
-            for i in monthly_data:
-                year = i[0]
-                month = self.__index_to_month[i[1]]
-                week_num = i[2]
+            if monthly_data: 
+                worksheet = workbook.active
+                year = monthly_data[0][0]
+                month = self.__index_to_month[monthly_data[0][1]]
+                week_num = monthly_data[0][2]
                 sheet_name = f"{year} {month} {week_num}"
+                worksheet.title = sheet_name # e.g. 2023 February 3
+                worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
+                # Make the headers bold
+                for cell in worksheet[1]:
+                    cell.font = Font(bold=True)
 
-                if sheet_name in workbook.sheetnames:
-                    worksheet = workbook[sheet_name]
-                    worksheet.append(list(i)[3:])
+                for i in monthly_data:
+                    year = i[0]
+                    month = self.__index_to_month[i[1]]
+                    week_num = i[2]
+                    sheet_name = f"{year} {month} {week_num}"
 
-                else:
-                    workbook.create_sheet(sheet_name)
-                    worksheet = workbook[sheet_name]
-                    worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
-                    worksheet.append(list(i)[3:])      
+                    if sheet_name in workbook.sheetnames:
+                        worksheet = workbook[sheet_name]
+                        worksheet.append(list(i)[3:])
 
-            workbook._sheets.sort(key=lambda ws: ws.title)
-            workbook.save("Report.xlsx")    
-            # else: 
-            #     goal_workbook = xl.Workbook()
-            #     goal_worksheet = goal_workbook.active
-            #     goal_worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
-            #     goal_workbook.save("Report.xlsx")
+                    else:
+                        workbook.create_sheet(sheet_name)
+                        worksheet = workbook[sheet_name]
+                        worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
+                        # Make the headers bold
+                        for cell in worksheet[1]:
+                            cell.font = Font(bold=True)
+                        worksheet.append(list(i)[3:])      
+
+                workbook._sheets.sort(key=lambda ws: ws.title)
+
+
+                # Add total data
+                year = total_data[0][0]
+                month = self.__index_to_month[total_data[0][1]]
+                workbook.create_sheet(f"{year} {month} Підсумки")
+                worksheet = workbook[f"{year} {month} Підсумки"]
+                worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
+                
+                # Make the headers bold
+                for cell in worksheet[1]:
+                    cell.font = Font(bold=True)
+
+                for i in total_data:
+                    worksheet.append(list(i[2:]))
+
+                # Add final summary data
+                worksheet.append(["Підсумок"] + list(final_summary_data[0]))
+
+                # Make the summary row bold
+                last_row = len(worksheet["A"])
+
+                for cell in worksheet[last_row]:
+                    cell.font = Font(bold=True)
+
+                workbook.save("Report.xlsx")
+
+            else: 
+                worksheet = workbook.active
+                worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
+                # Make the headers bold
+                for cell in worksheet[1]:
+                    cell.font = Font(bold=True)
+                workbook.save("Report.xlsx")
 
 
 
