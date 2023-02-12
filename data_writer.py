@@ -32,11 +32,11 @@ class DataWriter:
         )
         self.__cur = self.__conn.cursor()
 
-        self.__cur.execute(
-            """
-            DROP TABLE goals
-            """
-        )
+        # self.__cur.execute(
+        #     """
+        #     DROP TABLE goals
+        #     """
+        # )
 
         # self.__cur.execute(
         #     """
@@ -145,12 +145,11 @@ class DataWriter:
 
     def get_goals_xl(self, mode: str, sort_by: str):
         sort_by_options = ["completed", "rewards", "uncompleted", "total"]
+        today = datetime.today().date()
+        month = int(datetime.now().strftime("%m"))
+        week_num = week_number_of_month(today)
 
         if mode == "week":
-            today = datetime.today().date()
-            month = int(datetime.now().strftime("%m"))
-            week_num = week_number_of_month(today)
-
             query = """
                 SELECT 
                     name, completed_goals, rewards, uncompleted_goals, total_goals
@@ -175,8 +174,6 @@ class DataWriter:
                     data = sorted(data, key=lambda x: -x[sort_by_index]) # sort in descending order
 
                 # Create an excel sheet
-                today = datetime.today().date()
-
                 goal_workbook = xl.Workbook()
                 goal_worksheet = goal_workbook.active
                 goal_worksheet.title = str(today)
@@ -195,14 +192,68 @@ class DataWriter:
                 goal_workbook.save("Report.xlsx")
     
         elif mode == "month":
-            query = """
-                SELECT  
+            insert_value = (month, )
+            totals_query = """
+                SELECT 
+                    year, month, name, sum(completed_goals), sum(rewards), sum(uncompleted_goals), sum(total_goals)
+                FROM 
+                    goals
+                WHERE 
+                    month = %s
+                GROUP BY
+                    name, month, year
+            """
+
+            monthly_data_query = """
+                SELECT 
                     year, month, week_num, name, completed_goals, rewards, uncompleted_goals, total_goals
                 FROM 
                     goals
-                WHERE
+                WHERE 
                     month = %s
             """
+
+            self.__cur.execute(monthly_data_query, insert_value)    
+            monthly_data = self.__cur.fetchall()
+
+            self.__cur.execute(totals_query, insert_value)    
+            total_data = self.__cur.fetchall()
+
+            # Create an excel sheet
+            workbook = xl.Workbook()
+
+            worksheet = workbook.active
+            year = monthly_data[0][0]
+            month = self.__index_to_month[monthly_data[0][1]]
+            week_num = monthly_data[0][2]
+            sheet_name = f"{year} {month} {week_num}"
+            worksheet.title = sheet_name # e.g. 2023 February 3
+            worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
+
+            for i in monthly_data:
+                year = i[0]
+                month = self.__index_to_month[i[1]]
+                week_num = i[2]
+                sheet_name = f"{year} {month} {week_num}"
+
+                if sheet_name in workbook.sheetnames:
+                    worksheet = workbook[sheet_name]
+                    worksheet.append(list(i)[3:])
+
+                else:
+                    workbook.create_sheet(sheet_name)
+                    worksheet = workbook[sheet_name]
+                    worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
+                    worksheet.append(list(i)[3:])      
+
+            workbook._sheets.sort(key=lambda ws: ws.title)
+            workbook.save("Report.xlsx")    
+            # else: 
+            #     goal_workbook = xl.Workbook()
+            #     goal_worksheet = goal_workbook.active
+            #     goal_worksheet.append(["Ім'я", "Виконані цілі", "Заохочення",  "Не виконані цілі", "Всього цілей"])
+            #     goal_workbook.save("Report.xlsx")
+
 
 
         elif mode == "year":
