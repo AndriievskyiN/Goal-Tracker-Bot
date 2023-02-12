@@ -247,7 +247,7 @@ class DataWriter:
             total_data = self.__cur.fetchall()
 
             self.__cur.execute(final_summary_query, insert_values)
-            final_summary_data = self.__cur.fetchall()[0]
+            final_summary_data = self.__cur.fetchall()
 
             # Create an excel sheet
             workbook = xl.Workbook()
@@ -301,7 +301,8 @@ class DataWriter:
                     worksheet.append(list(i[2:]))
 
                 # Add final summary data
-                worksheet.append(["Підсумок"] + list(final_summary_data))
+                for i in final_summary_data:
+                    worksheet.append(["Підсумок"] + list(i))
 
                 # Make the summary row bold
                 last_row = len(worksheet["A"])
@@ -319,7 +320,7 @@ class DataWriter:
                 for cell in worksheet[1]:
                     cell.font = Font(bold=True)
 
-                filename = f"{month} {year}.xlsx"
+                filename = f"{month_str} {year}.xlsx"
                 workbook.save(filename)
 
         elif mode == "year":

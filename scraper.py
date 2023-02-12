@@ -17,6 +17,7 @@ class Scraper:
     def scrape_goals(message: str):
         for line in message.split("\n"):
             line = re.sub("[–]", "-", line) # replace the weird-long dash symbol with a regular one
+            line = re.sub("[']", "’", line)
 
             if line.lower().startswith("дата"):
                 date = line.split("-")[1].strip()
@@ -24,7 +25,7 @@ class Scraper:
                 dt = parse(date, dayfirst=True).date()
                 week_num = week_number_of_month(dt)
 
-            elif line.lower().startswith("ім'я"):
+            elif line.lower().startswith("ім’я"):
                 name = line.split("-")[1].strip()
 
             elif line.lower().startswith("виконані цілі"):

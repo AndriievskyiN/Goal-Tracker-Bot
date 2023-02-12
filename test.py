@@ -12,3 +12,8 @@
 #     cell.font = Font(bold=True)
 
 # wb.save("test.xlsx")
+
+
+import re
+line = "ім‘я"
+print(re.sub("[‘]", "'", line))
