@@ -145,7 +145,7 @@ class DataWriter:
 
 
     def get_goals_xl(self, mode: str, sort_by: str):
-        sort_by_options = ["completed", "rewards", "uncompleted", "total"]
+        sort_by_options = ["completed_goals", "rewards", "uncompleted_goals", "total_goals"]
         today = datetime.today().date()
         year = int(datetime.now().strftime("%Y"))
         month = int(datetime.now().strftime("%m"))
@@ -189,7 +189,6 @@ class DataWriter:
                     goal_worksheet.append(list(i))
                     goal_workbook.save("Report.xlsx")
 
-            
             else: 
                 goal_workbook = xl.Workbook()
                 goal_worksheet = goal_workbook.active
@@ -197,10 +196,11 @@ class DataWriter:
                 # Make the headers bold
                 for cell in goal_worksheet[1]:
                     cell.font = Font(bold=True)
-                    
+
                 goal_workbook.save("Report.xlsx")
     
         elif mode == "month":
+            sort_by_direction = "ASC" if sort_by == "uncompleted_goals" else "DESC"
             insert_values = (year, month)
             monthly_data_query = """
                 SELECT 
@@ -209,22 +209,26 @@ class DataWriter:
                     goals
                 WHERE 
                     year = %s and month = %s
-            """
+                ORDER BY
+                    {} {}
+            """.format(sort_by, sort_by_direction)
 
             totals_query = """
                 SELECT 
-                    year, month, name, sum(completed_goals), sum(rewards), sum(uncompleted_goals), sum(total_goals)
+                    year, month, name, sum(completed_goals) as completed_goals , sum(rewards) as rewards, sum(uncompleted_goals) as uncompleted_goals, sum(total_goals) as total_goals
                 FROM 
                     goals
                 WHERE 
                     year = %s and month = %s
                 GROUP BY
                     name, month, year
-            """
+                ORDER BY
+                    {}  {}
+            """.format(sort_by, sort_by_direction)
 
             final_summary_query = """
                 SELECT 
-                    sum(completed_goals), sum(rewards), sum(uncompleted_goals), sum(total_goals)
+                    sum(completed_goals) , sum(rewards), sum(uncompleted_goals), sum(total_goals)
                 FROM       
                     goals
                 WHERE 
@@ -240,7 +244,7 @@ class DataWriter:
             total_data = self.__cur.fetchall()
 
             self.__cur.execute(final_summary_query, insert_values)
-            final_summary_data = self.__cur.fetchall()
+            final_summary_data = self.__cur.fetchall()[0]
 
             # Create an excel sheet
             workbook = xl.Workbook()
@@ -294,7 +298,7 @@ class DataWriter:
                     worksheet.append(list(i[2:]))
 
                 # Add final summary data
-                worksheet.append(["Підсумок"] + list(final_summary_data[0]))
+                worksheet.append(["Підсумок"] + list(final_summary_data))
 
                 # Make the summary row bold
                 last_row = len(worksheet["A"])
@@ -311,8 +315,6 @@ class DataWriter:
                 for cell in worksheet[1]:
                     cell.font = Font(bold=True)
                 workbook.save("Report.xlsx")
-
-
 
         elif mode == "year":
             pass
