@@ -24,7 +24,7 @@ goal_sort_by_keyboard = Keyboard.get_keyboard("goal_sort_by_keyboard")
 # START COMMAND
 @dp.message_handler(commands=["start"])
 async def welcome(message: types.Message):
-    await message.answer("Вітаю! Для початку подивіться це відео про команди цього бота: \nADD LINK")
+    await message.answer("Вітаю! Для початку подивіться це відео про команди цього бота: \nhttps://youtu.be/PmgiIa0ONVU")
 
 @dp.message_handler(commands=["getgoals"])
 async def get_goals_mode(message: types.Message):

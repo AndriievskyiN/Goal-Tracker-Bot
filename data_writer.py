@@ -47,20 +47,20 @@ class DataWriter:
 
         # self.__conn.commit()
 
-        create_goals_table = """
-            CREATE TABLE IF NOT EXISTS goals (
-                id SERIAL PRIMARY KEY,
-                year SMALLINT,
-                month SMALLINT,
-                week_num SMALLINT,
-                name VARCHAR(100) NOT NULL,
-                completed_goals SMALLINT,
-                rewards SMALLINT, 
-                uncompleted_goals SMALLINT,
-                total_goals SMALLINT,
-                UNIQUE (year, month, week_num, name)
-            )    
-        """
+        # create_goals_table = """
+        #     CREATE TABLE IF NOT EXISTS goals (
+        #         id SERIAL PRIMARY KEY,
+        #         year SMALLINT,
+        #         month SMALLINT,
+        #         week_num SMALLINT,
+        #         name VARCHAR(100) NOT NULL,
+        #         completed_goals SMALLINT,
+        #         rewards SMALLINT, 
+        #         uncompleted_goals SMALLINT,
+        #         total_goals SMALLINT,
+        #         UNIQUE (year, month, week_num, name)
+        #     )    
+        # """
 
         # create_measurements_table = """
         #     CREATE TABLE IF NOT EXISTS measurements (
@@ -81,9 +81,9 @@ class DataWriter:
         #     )
         # """
 
-        self.__cur.execute(create_goals_table)
+        # self.__cur.execute(create_goals_table)
         # self.__cur.execute(create_measurements_table)
-        self.__conn.commit()
+        # self.__conn.commit()
 
         # self.__current_year = datetime.now().year
         # self.__current_month = self.__index_to_month[datetime.now().month]
@@ -171,7 +171,7 @@ class DataWriter:
                 # Get index to sort by
                 sort_by_index = sort_by_options.index(sort_by) + 1 # + 1 because we exclude name 
 
-                if sort_by == "uncompleted":
+                if sort_by == "uncompleted_goals":
                     data = sorted(data, key=lambda x: x[sort_by_index]) # sort in ascending order
                 
                 else:
