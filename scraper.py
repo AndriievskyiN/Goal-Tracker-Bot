@@ -25,7 +25,7 @@ class Scraper:
                 dt = parse(date, dayfirst=True).date()
                 week_num = week_number_of_month(dt)
 
-            elif line.lower().startswith("ім’я"):
+            elif line.lower().startswith("ім") and "-" in line:
                 name = line.split("-")[1].strip()
 
             elif line.lower().startswith("виконані цілі"):
