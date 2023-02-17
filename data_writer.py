@@ -145,6 +145,7 @@ class DataWriter:
 
     def get_goals_xl(self, mode: str, sort_by: str):
         sort_by_options = ["completed_goals", "rewards", "uncompleted_goals", "total_goals"]
+        sort_by_direction = "ASC" if sort_by == "uncompleted_goals" else "DESC"
         today = datetime.today().date()
         year = int(datetime.now().strftime("%Y"))
         month = int(datetime.now().strftime("%m"))
@@ -162,10 +163,24 @@ class DataWriter:
                 WHERE year = %s and month = %s and week_num = %s
             """
 
+            final_weekly_query = """
+                SELECT 
+                    sum(completed_goals) as completed_goals , sum(rewards) as rewards, sum(uncompleted_goals) as uncompleted_goals, sum(total_goals) as total_goals
+                FROM 
+                    goals
+                WHERE 
+                    year = %s and month = %s and week_num = %s
+                GROUP BY
+                    week_num, month, year
+            """
+
             insert_values = (year, month, week_num)
 
             self.__cur.execute(query, insert_values)
             data = self.__cur.fetchall()
+
+            self.__cur.execute(final_weekly_query, insert_values)
+            final_weekly_data = self.__cur.fetchall()
 
             if data:
                 # Get index to sort by
@@ -192,6 +207,18 @@ class DataWriter:
 
                 workbook.save(filename)
 
+                # Add final summary data
+                for i in final_weekly_data:
+                    worksheet.append(["Підсумок"] + list(i))
+
+                # Make the summary row bold
+                last_row = len(worksheet["A"])
+
+                for cell in worksheet[last_row]:
+                    cell.font = Font(bold=True)
+
+                workbook.save(filename)
+
             else: 
                 workbook = xl.Workbook()
                 worksheet = workbook.active
@@ -203,7 +230,6 @@ class DataWriter:
                 workbook.save(filename)
     
         elif mode == "month":
-            sort_by_direction = "ASC" if sort_by == "uncompleted_goals" else "DESC"
             insert_values = (year, month)
             monthly_data_query = """
                 SELECT 
@@ -216,7 +242,7 @@ class DataWriter:
                     {} {}
             """.format(sort_by, sort_by_direction)
 
-            totals_query = """
+            total_monthly_query = """
                 SELECT 
                     year, month, name, sum(completed_goals) as completed_goals , sum(rewards) as rewards, sum(uncompleted_goals) as uncompleted_goals, sum(total_goals) as total_goals
                 FROM 
@@ -243,7 +269,7 @@ class DataWriter:
             self.__cur.execute(monthly_data_query, insert_values)    
             monthly_data = self.__cur.fetchall()
 
-            self.__cur.execute(totals_query, insert_values)    
+            self.__cur.execute(total_monthly_query, insert_values)    
             total_data = self.__cur.fetchall()
 
             self.__cur.execute(final_summary_query, insert_values)
